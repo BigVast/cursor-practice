@@ -1,0 +1,7 @@
+import pandas as pd
+df = pd.read_csv('ab.csv')
+dfTest = df['count'].value_counts() 
+print(dfTest)
+outputpath = 'count.csv'
+dfTest.to_csv(outputpath)
+

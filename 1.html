@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务管理器</title>
+    <!-- 添加Font Awesome库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .task-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .task-content {
+            display: flex;
+            align-items: center;
+        }
+        .task-number {
+            margin-right: 15px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .task-text.completed {
+            text-decoration: line-through;
+            color: #7f8c8d;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .week-view {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .day {
+            text-align: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            width: 14%;
+            box-sizing: border-box;
+        }
+        .day:hover {
+            background-color: #ecf0f1;
+        }
+        .day.selected {
+            background-color: #3498db;
+            color: white;
+        }
+        .day-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .day-number {
+            font-size: 1.2em;
+        }
+        .day-tasks {
+            font-size: 0.8em;
+            color: #7f8c8d;
+            margin-top: 5px;
+            max-height: 60px;
+            overflow-y: auto;
+            text-align: left;
+            padding: 0 5px;
+        }
+        .day-task-item {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+        .completed-task {
+            text-decoration: line-through;
+            color: #95a5a6;
+        }
+        #add-task-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        #add-task-btn:hover {
+            background-color: #27ae60;
+        }
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .modal-content button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #modal-add-task {
+            background-color: #3498db;
+            color: white;
+        }
+        #modal-add-task:hover {
+            background-color: #2980b9;
+        }
+        #modal-cancel {
+            background-color: #95a5a6;
+            color: white;
+        }
+        #modal-cancel:hover {
+            background-color: #7f8c8d;
+        }
+        #prevWeekBtn, #nextWeekBtn {
+            background-color: #34495e;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s ease;
+        }
+        #prevWeekBtn:hover, #nextWeekBtn:hover {
+            background-color: #2c3e50;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+        }
+        .header-icons {
+            font-size: 24px;
+        }
+        .header-icons i {
+            margin-left: 15px;
+            color: #3498db;
+        }  
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>任务管理器</h1>
+        <div class="header-icons">
+            <i class="fas fa-calendar-alt"></i>
+            <i class="fas fa-tasks"></i>
+            <i class="fas fa-clock"></i>
+        </div>
+    </div>
+    <div id="calendar"></div>
+    <button id="add-task-btn" style="display: none;">
+        <i class="fas fa-plus"></i> 添加任务
+    </button>
+    <ul id="task-list"></ul>
+
+    <script>
+    const calendar = document.getElementById('calendar');
+    const taskList = document.getElementById('task-list');
+    const addTaskBtn = document.getElementById('add-task-btn');
+
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    let selectedDate = null;
+    let currentWeekStart = new Date();
+    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
+
+    function renderCalendar() {
+        const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        let calendarHTML = '<h2>当前周:</h2><div class="week-view">';
+        
+        for (let i = 0; i < 7; i++) {
+            const day = new Date(currentWeekStart);
+            day.setDate(day.getDate() + i);
+            const isSelected = selectedDate && day.toDateString() === selectedDate.toDateString();
+            const dayTasks = tasks.filter(task => new Date(task.date).toDateString() === day.toDateString());
+            calendarHTML += `
+                <div class="day ${isSelected ? 'selected' : ''}" data-date="${day.toISOString()}">
+                    <div class="day-name">${weekDays[i]}</div>
+                    <div class="day-number">${day.getDate()}</div>
+                    <div class="day-tasks">
+                        ${dayTasks.map(task => `
+                            <div class="day-task-item ${task.completed ? 'completed-task' : ''}">
+                                ${task.text}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        calendarHTML += '</div>';
+        calendar.innerHTML = calendarHTML;
+
+        const dayElements = calendar.querySelectorAll('.day');
+        dayElements.forEach(dayElement => {
+            dayElement.addEventListener('click', () => {
+                selectedDate = new Date(dayElement.dataset.date);
+                renderCalendar();
+                renderTasks();
+                addTaskBtn.style.display = 'block';
+            });
+        });
+    }
+
+    addTaskBtn.addEventListener('click', () => {
+        if (selectedDate) {
+            showAddTaskModal(selectedDate);
+        }
+    });
+
+    function showAddTaskModal(date) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>添加任务 (${date.toLocaleDateString()})</h3>
+                <input type="text" id="modal-task-input" placeholder="输入新任务">
+                <button id="modal-add-task">添加</button>
+                <button id="modal-cancel">取消</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+       
+
+        const addButton = modal.querySelector('#modal-add-task');
+        const cancelButton = modal.querySelector('#modal-cancel');
+        const input = modal.querySelector('#modal-task-input');
+
+        addButton.addEventListener('click', () => {
+            const text = input.value.trim();
+            if (text) {
+                addTask(text, date);
+                document.body.removeChild(modal);
+            }
+        });
+
+        cancelButton.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+    }
+
+    function addTask(text, date) {
+        const newTask = { 
+            id: Date.now(), 
+            text, 
+            completed: false, 
+            date: date.toISOString() 
+        };
+        tasks.push(newTask);
+        saveTasks();
+        renderTasks();
+    }
+
+    function renderTasks() {
+        if (!selectedDate) {
+            taskList.innerHTML = '';
+            return;
+        }
+
+        const filteredTasks = tasks.filter(task => {
+            const taskDate = new Date(task.date);
+            return taskDate.toDateString() === selectedDate.toDateString();
+        });
+
+        let tasksHTML = `<h3><i class="fas fa-list"></i> ${selectedDate.toLocaleDateString()} 的任务:</h3>`;
+        filteredTasks.forEach((task, index) => {
+            tasksHTML += `
+                <li class="task-item">
+                    <span class="task-content">
+                        <span class="task-number">${index + 1}.</span>
+                        <span class="task-text ${task.completed ? 'completed' : ''}" onclick="toggleTask(${task.id})">
+                            <i class="far ${task.completed ? 'fa-check-square' : 'fa-square'}"></i>
+                            ${task.text}
+                        </span>
+                    </span>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">
+                        <i class="fas fa-trash"></i> 删除
+                    </button>
+                </li>
+            `;
+        });
+        taskList.innerHTML = tasksHTML;
+    }
+
+    function toggleTask(id) {
+        const task = tasks.find(t => t.id === id);
+        if (task) {
+            task.completed = !task.completed;
+            saveTasks();
+            renderTasks();
+        }
+    }
+
+    function deleteTask(id) {
+        tasks = tasks.filter(t => t.id !== id);
+        saveTasks();
+        renderTasks();
+    }
+
+    function saveTasks() {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    renderCalendar();
+    renderTasks();
+
+    // 添加周导航按钮
+    const prevWeekBtn = document.createElement('button');
+    prevWeekBtn.innerHTML = '<i class="fas fa-chevron-left"></i> 上一周';
+    prevWeekBtn.addEventListener('click', () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        selectedDate = null;
+        renderCalendar();
+        renderTasks();
+        addTaskBtn.style.display = 'none';
+    });
+
+    const nextWeekBtn = document.createElement('button');
+    nextWeekBtn.innerHTML = '<i class="fas fa-chevron-right"></i> 下一周';
+    nextWeekBtn.addEventListener('click', () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        selectedDate = null;
+        renderCalendar();
+        renderTasks();
+        addTaskBtn.style.display = 'none';
+    });
+
+    calendar.parentNode.insertBefore(prevWeekBtn, calendar);
+    calendar.parentNode.insertBefore(nextWeekBtn, calendar.nextSibling);
+    </script>
+</body>
+</html>
