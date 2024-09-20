@@ -175,13 +175,19 @@
             cursor: pointer;
         }
 
-        #add-todo-form input,
-        #add-todo-form textarea {
+        .modal-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .modal-content input,
+        .modal-content textarea {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            box-sizing: border-box;
         }
 
         .button-container {
@@ -205,9 +211,59 @@
             margin-right: 10px;
         }
 
+        .modal-btn[type="submit"]:hover {
+            background-color: #1c638e;
+        }
+
         .cancel-btn {
             background-color: #95a5a6;
             color: white;
+        }
+
+        .cancel-btn:hover {
+            background-color: #7f8c8d;
+        }
+
+        .todo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .todo-text {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .edit-todo-btn, .save-todo-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .edit-todo-btn:hover, .save-todo-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .todo-input {
+            flex-grow: 1;
+            padding: 5px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
         }
     </style>
 </head>
@@ -245,6 +301,22 @@
                 </form>
             </div>
         </div>
+
+        <!-- 编辑待办事项模态框 -->
+        <div id="edit-todo-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>编辑待办事项</h2>
+                <form id="edit-todo-form">
+                    <input type="text" id="edit-todo-input" placeholder="待办事项名称" required>
+                    <textarea id="edit-todo-note" placeholder="备注（可选）" rows="3"></textarea>
+                    <div class="button-container">
+                        <button type="submit" class="modal-btn">确认保存</button>
+                        <button type="button" class="modal-btn cancel-btn">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -259,6 +331,11 @@
         const currentMonthBtn = document.getElementById('current-month');
         const selectedDateHeader = document.getElementById('selected-date-header');
         const selectedDateTodoList = document.getElementById('selected-date-todo-list');
+        const editTodoModal = document.getElementById('edit-todo-modal');
+        const editTodoForm = document.getElementById('edit-todo-form');
+        const editTodoInput = document.getElementById('edit-todo-input');
+        const editTodoNote = document.getElementById('edit-todo-note');
+        let editingTaskId = null;
 
         let selectedDate = new Date();
         let currentMonth = new Date();
@@ -344,21 +421,60 @@
             } else {
                 dailyTasks.forEach(task => {
                     const li = document.createElement('li');
+                    li.className = 'todo-item';
                     li.innerHTML = `
-                        <span>${task.text}</span>
-                        <button class="delete-todo-btn" data-id="${task.id}">删除</button>
+                        <span class="todo-text">${task.text}</span>
+                        <div class="todo-actions">
+                            <button class="edit-todo-btn" data-id="${task.id}">编辑</button>
+                            <button class="delete-todo-btn" data-id="${task.id}">删除</button>
+                        </div>
                     `;
                     selectedDateTodoList.appendChild(li);
                 });
             }
 
+            // 为删除和编辑按钮添加事件监听器
             document.querySelectorAll('.delete-todo-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const taskId = parseInt(e.target.getAttribute('data-id'));
                     deleteTask(taskId);
                 });
             });
+
+            document.querySelectorAll('.edit-todo-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const taskId = parseInt(e.target.getAttribute('data-id'));
+                    editTask(taskId);
+                });
+            });
         }
+
+        function editTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            editingTaskId = taskId;
+            editTodoInput.value = task.text;
+            editTodoNote.value = task.note || '';
+            editTodoModal.style.display = 'block';
+        }
+
+        editTodoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = editTodoInput.value.trim();
+            const note = editTodoNote.value.trim();
+            if (text && editingTaskId) {
+                const task = tasks.find(t => t.id === editingTaskId);
+                if (task) {
+                    task.text = text;
+                    task.note = note;
+                    saveTasks();
+                    renderSelectedDateTodos();
+                    renderCalendar();
+                    editTodoModal.style.display = 'none';
+                }
+            }
+        });
 
         function deleteTask(taskId) {
             tasks = tasks.filter(task => task.id !== taskId);
@@ -411,21 +527,22 @@
             localStorage.setItem('tasks', JSON.stringify(tasks));
         }
 
-        const closeBtn = addTodoModal.querySelector('.close');
-        const cancelBtn = addTodoModal.querySelector('.cancel-btn');
+        function closeModal(modal) {
+            modal.style.display = 'none';
+        }
 
-        closeBtn.addEventListener('click', () => {
-            addTodoModal.style.display = 'none';
-        });
+        [addTodoModal, editTodoModal].forEach(modal => {
+            const closeBtn = modal.querySelector('.close');
+            const cancelBtn = modal.querySelector('.cancel-btn');
 
-        cancelBtn.addEventListener('click', () => {
-            addTodoModal.style.display = 'none';
-        });
+            closeBtn.addEventListener('click', () => closeModal(modal));
+            cancelBtn.addEventListener('click', () => closeModal(modal));
 
-        window.addEventListener('click', (event) => {
-            if (event.target === addTodoModal) {
-                addTodoModal.style.display = 'none';
-            }
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal(modal);
+                }
+            });
         });
 
         prevMonthBtn.addEventListener('click', () => {
