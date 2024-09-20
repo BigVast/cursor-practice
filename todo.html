@@ -68,6 +68,16 @@
             opacity: 0.5;
         }
 
+        .day.today {
+            background-color: #fff9c4;
+            border: 2px solid #ffd54f;
+        }
+
+        .day.today.selected {
+            background-color: #d6eaf8;
+            border-color: #2980b9;
+        }
+
         .todo-section {
             margin-top: 20px;
         }
@@ -284,7 +294,14 @@
             const dayElement = document.createElement('div');
             dayElement.className = 'day';
             if (isOtherMonth) dayElement.classList.add('other-month');
-            if (date.toDateString() === new Date().toDateString()) dayElement.classList.add('today');
+            
+            const today = new Date();
+            console.log('Comparing date:', date.toDateString(), 'with today:', today.toDateString());
+            if (date.toDateString() === today.toDateString()) {
+                dayElement.classList.add('today');
+                console.log('Today found:', date.toDateString());
+            }
+            
             if (date.toDateString() === selectedDate.toDateString()) dayElement.classList.add('selected');
 
             dayElement.innerHTML = `
